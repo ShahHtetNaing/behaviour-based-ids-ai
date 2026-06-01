@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "records_processed": 5,
+    "anomalies_found": 1,
+    "normal_records": 4,
+    "anomaly_ratio_percent": 20.0,
+    "risk_level": "HIGH",
+    "risk_breakdown": {
+      "LOW": 0,
+      "MEDIUM": 0,
+      "HIGH": 1,
+      "CRITICAL": 0
+    },
+    "impact_breakdown": {
+      "Credential Attack": 1
+    }
+  },
+  "anomalies": [
+    {
+      "timestamp": "2026-06-01T01:09:00",
+      "src_ip": "10.0.0.9",
+      "dst_ip": "172.16.0.30",
+      "protocol": "tcp",
+      "dst_port": 3389,
+      "bytes": 920000.0,
+      "duration": 4200.0,
+      "failed_logins": 7.0,
+      "packets": 12450.0,
+      "source_file": "sample_network_log.csv",
+      "anomaly_score": 0.002945771162833233,
+      "risk_level": "HIGH",
+      "impact_category": "Credential Attack",
+      "what_is_it": "A credential attack event was detected from 10.0.0.9 targeting 172.16.0.30:3389 over TCP.",
+      "current_impact": "Active authentication pressure on exposed services. Critical admin/remote services are being targeted now. Network performance degradation and service instability may occur. Access control is already rejecting suspicious sessions.",
+      "future_impact": "Account takeover, privilege escalation, and ransomware staging. Without action, attackers may gain valid credentials within hours.",
+      "risk_reasons": [
+        "Brute-force login pattern",
+        "Sensitive service with unusually high transfer",
+        "Long-lived connection outside normal behavior",
+        "Packet flood signature",
+        "Failed/denied access pattern"
+      ],
+      "recommended_fix_steps": [
+        "Validate whether this traffic is expected by checking asset owner and change logs.",
+        "If unexpected, isolate the source host from critical network segments immediately.",
+        "Block or rate-limit suspicious source IP and destination port on firewall/IPS.",
+        "Force password reset and enable MFA if repeated login failures are present.",
+        "Run endpoint malware scan and review active processes on the source host.",
+        "Add a detection rule for this behavior pattern and monitor for recurrence for 72 hours."
+      ]
+    }
+  ]
+}

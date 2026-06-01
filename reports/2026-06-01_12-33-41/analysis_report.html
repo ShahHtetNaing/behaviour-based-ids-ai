@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IPS AI Security Report</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121a2b;
+      --panel-2: #1a2438;
+      --text: #e8eefc;
+      --muted: #9fb0d0;
+      --accent: #4f8cff;
+      --safe: #2ecc71;
+      --warn: #f39c12;
+      --high: #ff7a45;
+      --critical: #ff4d6d;
+      --border: #2a3754;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background: radial-gradient(circle at top, #15213a, var(--bg));
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 28px; }
+    .hero {
+      background: linear-gradient(135deg, #1f2f52, #16233d);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+    }
+    .hero h1 { margin: 0 0 8px; font-size: 1.8rem; }
+    .hero p { margin: 0; color: var(--muted); }
+    .risk-pill {
+      display: inline-block;
+      margin-top: 14px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      background: #223252;
+      border: 1px solid var(--border);
+    }
+    .risk-pill.critical { color: #fff; background: var(--critical); }
+    .risk-pill.high { color: #fff; background: var(--high); }
+    .risk-pill.medium { color: #111; background: var(--warn); }
+    .risk-pill.low { color: #111; background: var(--safe); }
+    .kpis {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin: 20px 0;
+    }
+    .kpi {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+    .kpi span { color: var(--muted); font-size: .85rem; }
+    .kpi h2 { margin: 6px 0 0; font-size: 1.6rem; }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+    .panel h2 { margin-top: 0; font-size: 1.15rem; }
+    .stat-row { margin-bottom: 12px; }
+    .stat-label { display: flex; justify-content: space-between; margin-bottom: 6px; color: var(--muted); }
+    .stat-track { height: 10px; background: #0d1424; border-radius: 999px; overflow: hidden; }
+    .stat-fill { height: 100%; border-radius: 999px; }
+    .bar-safe { background: var(--safe); }
+    .bar-danger { background: var(--critical); }
+    .bar-critical { background: #b8002f; }
+    .bar-high { background: var(--high); }
+    .charts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .chart-box {
+      background: var(--panel-2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 320px;
+    }
+    .anomaly-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-left: 5px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .anomaly-card.risk-critical { border-left-color: var(--critical); }
+    .anomaly-card.risk-high { border-left-color: var(--high); }
+    .anomaly-card.risk-medium { border-left-color: var(--warn); }
+    .anomaly-card.risk-low { border-left-color: var(--safe); }
+    .anomaly-card header {
+      display: flex; justify-content: space-between; align-items: center; gap: 10px;
+    }
+    .anomaly-card h3 { margin: 0; font-size: 1.05rem; }
+    .badge {
+      padding: 4px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700;
+      background: #223252; border: 1px solid var(--border);
+    }
+    .badge.risk-critical { background: var(--critical); color: #fff; }
+    .badge.risk-high { background: var(--high); color: #fff; }
+    .badge.risk-medium { background: var(--warn); color: #111; }
+    .badge.risk-low { background: var(--safe); color: #111; }
+    .what { margin: 12px 0; }
+    .grid-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .grid-meta span { color: var(--muted); font-size: .8rem; }
+    .grid-meta p { margin: 2px 0 0; }
+    .impact-box {
+      background: #0f1728;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+    .impact-box h4 { margin: 0 0 6px; font-size: .92rem; }
+    .impact-box.current h4 { color: #7ec8ff; }
+    .impact-box.future h4 { color: #ffb4c0; }
+    .two-col {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .two-col ul, .two-col ol { margin: 6px 0 0; padding-left: 18px; }
+    .empty {
+      padding: 20px;
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      color: var(--muted);
+      text-align: center;
+    }
+    .detail-note {
+      color: var(--muted);
+      background: #0f1728;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    footer { color: var(--muted); font-size: .85rem; text-align: center; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Behaviour-Based IPS · AI Security Report</h1>
+      <p>Generated on 2026-06-01 04:33:41 UTC</p>
+      <span class="risk-pill high">Overall Risk: HIGH</span>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi"><span>Records processed</span><h2>5</h2></div>
+      <div class="kpi"><span>Anomalies detected</span><h2>1</h2></div>
+      <div class="kpi"><span>Normal records</span><h2>4</h2></div>
+      <div class="kpi"><span>Anomaly ratio</span><h2>20.0%</h2></div>
+    </section>
+
+    <section class="panel">
+      <h2>Traffic statistics</h2>
+      
+    <div class="stat-row">
+      <div class="stat-label"><span>Normal traffic</span><strong>4 (80.0%)</strong></div>
+      <div class="stat-track"><div class="stat-fill bar-safe" style="width:80.0%"></div></div>
+    </div>
+    
+
+    <div class="stat-row">
+      <div class="stat-label"><span>Anomalies</span><strong>1 (20.0%)</strong></div>
+      <div class="stat-track"><div class="stat-fill bar-danger" style="width:20.0%"></div></div>
+    </div>
+    
+
+    <div class="stat-row">
+      <div class="stat-label"><span>Critical risk events</span><strong>0 (0.0%)</strong></div>
+      <div class="stat-track"><div class="stat-fill bar-critical" style="width:0.0%"></div></div>
+    </div>
+    
+
+    <div class="stat-row">
+      <div class="stat-label"><span>High risk events</span><strong>1 (100.0%)</strong></div>
+      <div class="stat-track"><div class="stat-fill bar-high" style="width:100.0%"></div></div>
+    </div>
+    
+    </section>
+
+    <section class="panel charts">
+      <div class="chart-box">
+        <h2>Risk level distribution</h2>
+        <canvas id="riskChart"></canvas>
+      </div>
+      <div class="chart-box">
+        <h2>Impact category distribution</h2>
+        <canvas id="impactChart"></canvas>
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>Detailed anomalies & remediation</h2>
+      
+      
+            <article class="anomaly-card risk-high">
+              <header>
+                <h3>Anomaly #1 · Credential Attack</h3>
+                <span class="badge risk-high">HIGH RISK</span>
+              </header>
+              <p class="what"><strong>What is it?</strong> A credential attack event was detected from 10.0.0.9 targeting 172.16.0.30:3389 over TCP.</p>
+              <div class="grid-meta">
+                <div><span>Time</span><p>2026-06-01T01:09:00</p></div>
+                <div><span>Source → Destination</span><p>10.0.0.9 → 172.16.0.30</p></div>
+                <div><span>Protocol / Port</span><p>tcp / 3389</p></div>
+                <div><span>AI Score</span><p>0.0029</p></div>
+                <div><span>Bytes / Packets</span><p>920000 / 12450</p></div>
+                <div><span>Log File</span><p>sample_network_log.csv</p></div>
+              </div>
+              <div class="impact-box current">
+                <h4>Current impact</h4>
+                <p>Active authentication pressure on exposed services. Critical admin/remote services are being targeted now. Network performance degradation and service instability may occur. Access control is already rejecting suspicious sessions.</p>
+              </div>
+              <div class="impact-box future">
+                <h4>Future impact if unresolved</h4>
+                <p>Account takeover, privilege escalation, and ransomware staging. Without action, attackers may gain valid credentials within hours.</p>
+              </div>
+              <div class="two-col">
+                <div>
+                  <h4>Why flagged</h4>
+                  <ul><li>Brute-force login pattern</li><li>Sensitive service with unusually high transfer</li><li>Long-lived connection outside normal behavior</li><li>Packet flood signature</li><li>Failed/denied access pattern</li></ul>
+                </div>
+                <div>
+                  <h4>How to resolve (step-by-step)</h4>
+                  <ol><li>Validate whether this traffic is expected by checking asset owner and change logs.</li><li>If unexpected, isolate the source host from critical network segments immediately.</li><li>Block or rate-limit suspicious source IP and destination port on firewall/IPS.</li><li>Force password reset and enable MFA if repeated login failures are present.</li><li>Run endpoint malware scan and review active processes on the source host.</li><li>Add a detection rule for this behavior pattern and monitor for recurrence for 72 hours.</li></ol>
+                </div>
+              </div>
+            </article>
+            
+    </section>
+
+    <footer>Behaviour-based Intrusion Prevention System · Showcase report</footer>
+  </div>
+
+  <script>
+    const palette = ["#4f8cff", "#ff4d6d", "#ff7a45", "#f39c12", "#2ecc71", "#9b59b6"];
+    const commonOptions = {
+      responsive: true,
+      plugins: {
+        legend: { position: "bottom", labels: { color: "#dbe7ff" } }
+      }
+    };
+
+    new Chart(document.getElementById("riskChart"), {
+      type: "pie",
+      data: {
+        labels: ["LOW", "MEDIUM", "HIGH", "CRITICAL"],
+        datasets: [{
+          data: [0, 0, 1, 0],
+          backgroundColor: palette
+        }]
+      },
+      options: commonOptions
+    });
+
+    new Chart(document.getElementById("impactChart"), {
+      type: "doughnut",
+      data: {
+        labels: ["Credential Attack"],
+        datasets: [{
+          data: [1],
+          backgroundColor: palette
+        }]
+      },
+      options: commonOptions
+    });
+  </script>
+</body>
+</html>
