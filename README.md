@@ -1,4 +1,4 @@
-# Behaviour-based Intrusion Prevention System (AI)
+# Behaviour-based Intrusion Detection System (AI)
 
 A showcase project for GitHub and LinkedIn. It reads network log CSV files from the `network/` folder, runs unsupervised behavior anomaly detection with **Isolation Forest**, and writes detailed findings with remediation steps.
 
@@ -129,4 +129,4 @@ The console prints the exact path to the HTML report when analysis finishes.
 
 ## Note
 
-This is a showcase IPS analytics project, not a production IDS/IPS. For real deployments, add SIEM integration, threat intelligence feeds, automated blocking, and model validation pipelines.
+This is a showcase IDS analytics project, not a production IDS. For real deployments, add SIEM integration, threat intelligence feeds, automated blocking pipelines, and model validation systems.
