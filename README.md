@@ -1,16 +1,20 @@
 # Behaviour-based Intrusion Prevention System (AI)
 
-A simple showcase project for GitHub and LinkedIn.  
-It reads real network log CSV files from the `network` folder, runs AI-based behavior anomaly detection, and writes detailed findings with remediation steps.
+A showcase project for GitHub and LinkedIn. It reads network log CSV files from the `network/` folder, runs unsupervised behavior anomaly detection with **Isolation Forest**, and writes detailed findings with remediation steps.
 
 ## What this project does
 
-- Ingests one or many CSV network logs from `network/`
+- Reads CSV network logs from `network/` (one file per run)
 - Learns normal behavior using `IsolationForest` (unsupervised AI)
 - Flags suspicious records as anomalies
 - Explains why each anomaly is risky
-- Generates detailed fix steps for analysts
+- Generates step-by-step remediation actions for analysts
 - Exports reports to a new timestamped folder under `reports/` (example: `reports/2026-06-01_14-30-45/`)
+
+## Requirements
+
+- **Python 3.10+** (3.11 or 3.12 recommended)
+- Windows, macOS, or Linux
 
 ## Folder structure
 
@@ -18,82 +22,111 @@ It reads real network log CSV files from the `network` folder, runs AI-based beh
 behaviour-based-ips-ai/
 ├─ main.py
 ├─ requirements.txt
+├─ first_time_setup.bat      # Windows: first-time venv + install + run
+├─ run.bat                   # Windows: run analyzer (uses .venv if present)
+├─ LINE_BY_LINE_GUIDE.md     # Optional walkthrough of the code
 ├─ network/
 │  └─ sample_network_log.csv
-├─ reports/
+├─ reports/                  # Generated report folders (created on run)
 └─ ips_ai/
    ├─ __init__.py
    ├─ data_loader.py
    ├─ analyzer.py
-   └─ reporting.py
+   ├─ reporting.py
+   ├─ html_report.py
+   └─ progress.py
 ```
 
 ## Expected CSV columns
 
-Your real network log CSV should include these columns (extra columns are okay):
+Your network log CSV should include these columns (extra columns are fine):
 
-- `timestamp`
-- `src_ip`
-- `dst_ip`
-- `protocol`
-- `src_port`
-- `dst_port`
-- `bytes`
-- `duration`
-- `status`
-- `failed_logins`
-- `packets`
+| Column | Description |
+|--------|-------------|
+| `timestamp` | Event time |
+| `src_ip` | Source IP |
+| `dst_ip` | Destination IP |
+| `protocol` | e.g. TCP, UDP |
+| `src_port` | Source port |
+| `dst_port` | Destination port |
+| `bytes` | Bytes transferred |
+| `duration` | Connection duration |
+| `status` | e.g. allowed, denied |
+| `failed_logins` | Failed login count |
+| `packets` | Packet count |
 
-If some columns are missing, the project automatically fills safe defaults.
+Missing columns are filled with safe defaults automatically. Column names are case-insensitive after loading.
 
-## Setup in PyCharm
+## Setup and run
 
-1. Open this folder in PyCharm.
-2. Create/select a Python interpreter (venv recommended).
-3. Install dependencies:
-   - `pip install -r requirements.txt`
-4. Put your real CSV log files into `network/`.
-5. Run:
-   - `python main.py`
-   - If multiple CSV files exist, choose one from the menu.
-   - Or analyze one file directly:
-     - `python main.py --file your_log.csv`
+### Windows (easiest)
 
-## Easiest run on Windows (no PyCharm config needed)
+1. Clone or download this repository.
+2. Put your CSV log file(s) in `network/`.
+3. **First time:** double-click `first_time_setup.bat`
+   - Creates `.venv`
+   - Installs dependencies from `requirements.txt`
+   - Runs the analyzer
+4. **Later runs:** double-click `run.bat`
+5. If several CSV files exist in `network/`, pick one by number or type the filename when prompted.
 
-- First time: double-click `first_time_setup.bat`
-  - Creates `.venv`
-  - Installs dependencies
-  - Runs analyzer
-- Next runs: double-click `run.bat`
-- You will see live progress bars while loading, analyzing, and generating reports.
+Progress bars appear in the console while loading, analyzing, and writing reports.
+
+### Terminal (any OS)
+
+From the project root:
+
+```bash
+# Create and activate a virtual environment (recommended)
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+
+# macOS / Linux
+source .venv/bin/activate
+
+pip install -r requirements.txt
+```
+
+Put your CSV files in `network/`, then run:
+
+```bash
+# Interactive: pick one file if multiple CSVs exist
+python main.py
+
+# Analyze a specific file (name only, must be in network/)
+python main.py --file your_log.csv
+```
+
+### PyCharm
+
+1. Open this folder as a project.
+2. Set the project interpreter to `.venv` (create it with `python -m venv .venv` if needed).
+3. Install dependencies: **Terminal →** `pip install -r requirements.txt`
+4. Add CSV files to `network/`.
+5. Run `main.py` with the same CLI options as above.
 
 ## Output
 
-After running, check:
+Each run creates a new folder under `reports/`:
 
-After running, check the newest folder inside `reports/`:
+- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.json` — machine-readable
+- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.md` — human-readable (SOC workflow)
+- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.html` — dashboard with charts, risk levels, and remediation steps
 
-- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.json` (machine-readable)
-- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.md` (human-readable, for SOC workflow)
-- `reports/YYYY-MM-DD_HH-MM-SS/analysis_report.html` (visual dashboard with charts, risk levels, and remediation steps)
+The console prints the exact path to the HTML report when analysis finishes.
 
-## Deep analysis workflow used
+## Analysis workflow
 
-1. Load all CSV logs from `network/`.
-2. Normalize and validate columns.
-3. Convert numeric features and encode categorical behavior.
-4. Train unsupervised anomaly model on current dataset.
-5. Score each event and detect outliers.
-6. Attach detailed risk reasons:
-   - brute-force behavior
-   - sensitive service abuse
-   - long connection anomalies
-   - packet flood indicators
-   - denied/failed access patterns
-7. Generate step-by-step remediation actions per anomaly.
+1. Select **one** CSV from `network/` (interactive menu or `--file`).
+2. Normalize and validate columns; fill missing fields with defaults.
+3. Encode categorical fields and prepare numeric features.
+4. Train an unsupervised `IsolationForest` model on the loaded data.
+5. Score each event and flag outliers as anomalies.
+6. Attach risk reasons (e.g. brute-force patterns, sensitive ports, long sessions, packet floods, denied access).
+7. Generate remediation steps per anomaly and export JSON, Markdown, and HTML reports.
 
 ## Note
 
-This is a showcase IPS analytics project.  
-For production, you should add SIEM integration, threat intel feeds, automated blocking hooks, and validation pipelines.
+This is a showcase IPS analytics project, not a production IDS/IPS. For real deployments, add SIEM integration, threat intelligence feeds, automated blocking, and model validation pipelines.
